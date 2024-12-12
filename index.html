@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Usuarios</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Formulario de Registro de Usuarios</h2>
+        <form id="formularioUsuario">
+            <input type="hidden" id="id" name="id">
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Escribe tu nombre" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="apellido" class="form-label">Apellido</label>
+                <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Escribe tu apellido" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="sexo" class="form-label">Sexo</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="sexoMasculino" name="sexo" value="Masculino" required>
+                        <label class="form-check-label" for="sexoMasculino">Masculino</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="sexoFemenino" name="sexo" value="Femenino" required>
+                        <label class="form-check-label" for="sexoFemenino">Femenino</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="correo@example.com" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="activo" class="form-label">Activo</label>
+                <select class="form-select" id="activo" name="activo" required>
+                    <option value="1">Sí</option>
+                    <option value="0">No</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+
+        <div class="d-flex justify-content-between align-items-center mt-5">
+            <h3>Lista de Usuarios</h3>
+            <button id="btnListar" class="btn btn-secondary">Listar Usuarios</button>
+        </div>
+
+        <div id="tablaUsuariosContainer" class="mt-3" style="display: none;">
+            <table class="table table-bordered" id="tablaUsuarios">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Sexo</th>
+                        <th>Email</th>
+                        <th>Fecha de Nacimiento</th>
+                        <th>Activo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Registrar o actualizar un usuario
+            $('#formularioUsuario').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    url: 'guardar_listar.php',
+                    type: 'POST',
+                    data: $(this).serialize() + '&action=guardar',
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            alert(response.message);
+                            $('#formularioUsuario')[0].reset();
+                            $('#id').val('');
+                            listarUsuarios();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    }
+                });
+            });
+
+            // Listar usuarios
+            function listarUsuarios() {
+                $.ajax({
+                    url: 'guardar_listar.php',
+                    type: 'POST',
+                    data: { action: 'listar' },
+                    dataType: 'json',
+                    success: function (usuarios) {
+                        let filas = '';
+                        usuarios.forEach(usuario => {
+                            filas += `
+                                <tr>
+                                    <td>${usuario.id}</td>
+                                    <td>${usuario.nombre}</td>
+                                    <td>${usuario.apellido}</td>
+                                    <td>${usuario.sexo}</td>
+                                    <td>${usuario.email}</td>
+                                    <td>${usuario.fecha_nacimiento}</td>
+                                    <td>${usuario.activo === '1' ? 'Sí' : 'No'}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm btnEditar" data-id="${usuario.id}">Editar</button>
+                                        <button class="btn btn-danger btn-sm btnEliminar" data-id="${usuario.id}">Eliminar</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        $('#tablaUsuarios tbody').html(filas);
+                        $('#tablaUsuariosContainer').fadeIn();
+                    }
+                });
+            }
+
+            $('#btnListar').on('click', function () {
+                listarUsuarios();
+            });
+
+            // Editar usuario
+            $(document).on('click', '.btnEditar', function () {
+                const id = $(this).data('id');
+                $.ajax({
+                    url: 'guardar_listar.php',
+                    type: 'POST',
+                    data: { action: 'obtener', id: id },
+                    dataType: 'json',
+                    success: function (usuario) {
+                        $('#id').val(usuario.id);
+                        $('#nombre').val(usuario.nombre);
+                        $('#apellido').val(usuario.apellido);
+                        $(`input[name="sexo"][value="${usuario.sexo}"]`).prop('checked', true);
+                        $('#email').val(usuario.email);
+                        $('#fecha_nacimiento').val(usuario.fecha_nacimiento);
+                        $('#activo').val(usuario.activo);
+                    }
+                });
+            });
+
+            // Eliminar usuario
+            $(document).on('click', '.btnEliminar', function () {
+                const id = $(this).data('id');
+                if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+                    $.ajax({
+                        url: 'guardar_listar.php',
+                        type: 'POST',
+                        data: { action: 'eliminar', id: id },
+                        dataType: 'json',
+                        success: function (response) {
+                            if (response.status === 'success') {
+                                alert(response.message);
+                                listarUsuarios();
+                            } else {
+                                alert('Error: ' + response.message);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
